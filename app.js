@@ -1,13 +1,106 @@
 require("dotenv").config();
+const connect = require("./lib/connect");
 const express = require("express");
+const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 3000;
+const Book = require("./models/books");
+const Copy = require("./models/copies");
+const Rental = require("./models/rentals");
+const User = require("./models/users");
+
+app.use(express.json(), cors());
 
 app.get("/", (req, res) => res.type("html").send(html));
 
 const server = app.listen(port, () =>
   console.log(`Express app listening on port ${port}!`)
 );
+//Seeing the existing users
+app.get("/users", async (req, res) => {
+  await connect();
+  const users = await User.find();
+  res.json(users);
+});
+
+//Creating a new user
+app.post("/users", async (req, res) => {
+  await connect();
+  const { name } = req.body;
+  if (!name) {
+    return { message: "Please write a name" };
+  }
+  const foundUser = await User.findOne({ name: name });
+  if (foundUser) {
+    return res.json(foundUser);
+  } else {
+    const created = await User.create({ name });
+    return res.json(created);
+  }
+});
+
+//Seeing the existing books
+app.get("/books", async (req, res) => {
+  await connect();
+  const books = await Book.find();
+  res.json(books);
+});
+
+//Checking up an specific book
+app.get("/books/:bookId", async (req, res) => {
+  await connect();
+  const { bookId } = req.params;
+  console.log(bookId);
+  const selectedBook = await Book.findOne({ _id: bookId });
+  console.log("selectedBook: ", selectedBook);
+  const copies = await Copy.find({ bookId: selectedBook._id });
+  console.log("book ID:", bookId);
+  console.log("copies:", copies);
+  const totalCopies = copies.length;
+  console.log("Total copies:", copies.length);
+  const listOfAvailableCopies = copies.map((copy) => copy.rented === false);
+  console.log("listOfAvailableCopies", listOfAvailableCopies);
+  const availableCopies = listOfAvailableCopies.length;
+  console.log({ availableCopies });
+  if (availableCopies === 0) {
+    res.json("This book is not available");
+  } else {
+    return res.json({
+      id: selectedBook._id,
+      title: selectedBook.title,
+      totalCopies: totalCopies,
+      copiesInStock: availableCopies,
+      coverImage: "",
+    });
+  }
+});
+//Renting a book
+app.post("/books/:bookId/rent", async (req, res) => {
+  await connect();
+  const { userId } = req.body;
+  const { bookId } = req.params;
+  const copyToRent = await Copy.findOne(
+    { bookId: bookId } || { rented: false }
+  );
+  console.log("copy to rent: ", copyToRent, "bookId: ", bookId);
+  const newRental = await Rental.create({
+    title: copyToRent.title,
+    copyId: copyToRent._id,
+    bookId: bookId,
+    userId: userId,
+  });
+  if (newRental) {
+    const id = copyToRent._id;
+    console.log(copyToRent);
+    const changeStatus = await Copy.findOneAndReplace(
+      { id, id },
+      { rented: true }
+    );
+  }
+
+  console.log(newRental);
+  res.json({ newRental });
+});
 
 server.keepAliveTimeout = 120 * 1000;
 server.headersTimeout = 120 * 1000;
@@ -57,8 +150,9 @@ const html = `
   </head>
   <body>
     <section>
-      Hello from Render!
+      Welcome to the library!
     </section>
+    
   </body>
 </html>
 `;
