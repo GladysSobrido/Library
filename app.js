@@ -3,6 +3,7 @@ const connect = require("./lib/connect");
 const express = require("express");
 const cors = require("cors");
 const app = express();
+const dayjs = require("dayjs");
 const port = process.env.PORT || 3000;
 const Book = require("./models/books");
 const Copy = require("./models/copies");
@@ -21,6 +22,7 @@ app.get("/users", async (req, res) => {
   await connect();
   const users = await User.find();
   res.json(users);
+  console.log("You are seeing the users");
 });
 
 //Creating a new user
@@ -70,7 +72,7 @@ app.get("/books/:bookId", async (req, res) => {
       title: selectedBook.title,
       totalCopies: totalCopies,
       copiesInStock: availableCopies,
-      coverImage: "",
+      coverImage: selectedBook.img,
     });
   }
 });
@@ -79,29 +81,40 @@ app.post("/books/:bookId/rent", async (req, res) => {
   await connect();
   const { userId } = req.body;
   const { bookId } = req.params;
-  const copyToRent = await Copy.findOne(
-    { bookId: bookId } || { rented: false }
-  );
+  const copyToRent = await Copy.findOne({ bookId: bookId, rented: false });
   console.log("copy to rent: ", copyToRent, "bookId: ", bookId);
+  const today = dayjs();
   const newRental = await Rental.create({
-    title: copyToRent.title,
-    copyId: copyToRent._id,
+    title: copyToRent?.title,
+    copyId: copyToRent?._id,
     bookId: bookId,
     userId: userId,
+    rentalDate: today.toDate(),
+    rentalEnd: today.add(2, "week").toDate(),
   });
   if (newRental) {
-    const id = copyToRent._id;
+    const choosenId = copyToRent._id;
     console.log(copyToRent);
-    const changeStatus = await Copy.findOneAndReplace(
-      { id, id },
+    const changeStatus = await Copy.findOneAndUpdate(
+      { _id: choosenId },
       { rented: true }
     );
+    console.log(newRental);
+    res.json({ newRental });
   }
-
-  console.log(newRental);
-  res.json({ newRental });
 });
+//Get the rented books by an user
+app.get("/users/:userId/rentals", async (req, res) => {
+  await connect();
+  const { userId } = req.params;
+  console.log(userId);
 
+  const rentedBooks = await Rental.find({
+    userId: userId,
+  });
+  console.log(rentedBooks);
+  res.json(rentedBooks);
+});
 server.keepAliveTimeout = 120 * 1000;
 server.headersTimeout = 120 * 1000;
 

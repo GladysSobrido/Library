@@ -3,7 +3,7 @@ const { Schema } = mongoose;
 const bookSchema = new Schema({
   title: { type: String, required: true },
   copies: { type: Array, required: true },
-  // img:{type:img}
+  img: { type: String },
 });
 
 const Book = mongoose.models.Book || mongoose.model("Book", bookSchema);
