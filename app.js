@@ -69,7 +69,7 @@ app.get("/books/:bookId", async (req, res) => {
   console.log("copies:", copies);
   const totalCopies = copies.length;
   console.log("Total copies:", copies.length);
-  const listOfAvailableCopies = copies.map((copy) => copy.rented === false);
+  const listOfAvailableCopies = copies.filter((copy) => copy.rented === false);
   console.log("listOfAvailableCopies", listOfAvailableCopies);
   const availableCopies = listOfAvailableCopies.length;
   console.log({ availableCopies });
