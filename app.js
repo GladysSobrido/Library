@@ -34,10 +34,10 @@ app.post("/users", async (req, res) => {
   }
   const foundUser = await User.findOne({ name: name });
   if (foundUser) {
-    return res.json(foundUser);
+    return res.json({ id: foundUser._id, name: foundUser.name });
   } else {
     const created = await User.create({ name });
-    return res.json(created);
+    return res.json({ id: created._id, name: created.name });
   }
 });
 
@@ -45,7 +45,16 @@ app.post("/users", async (req, res) => {
 app.get("/books", async (req, res) => {
   await connect();
   const books = await Book.find();
-  res.json(books);
+  res.json(
+    books.map((book) => {
+      const bookObject = book.toObject();
+      const { _id: id, ...restOfBook } = bookObject;
+      return {
+        id,
+        ...restOfBook,
+      };
+    })
+  );
 });
 
 //Checking up an specific book
