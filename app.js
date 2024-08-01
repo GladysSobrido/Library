@@ -73,17 +73,14 @@ app.get("/books/:bookId", async (req, res) => {
   console.log("listOfAvailableCopies", listOfAvailableCopies);
   const availableCopies = listOfAvailableCopies.length;
   console.log({ availableCopies });
-  if (availableCopies === 0) {
-    res.json("This book is not available");
-  } else {
-    return res.json({
-      id: selectedBook._id,
-      title: selectedBook.title,
-      totalCopies: totalCopies,
-      copiesInStock: availableCopies,
-      coverImage: selectedBook.img,
-    });
-  }
+
+  return res.json({
+    id: selectedBook._id,
+    title: selectedBook.title,
+    totalCopies: totalCopies,
+    copiesInStock: availableCopies,
+    coverImage: selectedBook.img,
+  });
 });
 //Renting a book
 app.post("/books/:bookId/rent", async (req, res) => {
